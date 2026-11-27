@@ -114,6 +114,7 @@ describe('Stream lifecycle across retries', () => {
       stream.on('end', () => resolve());
       stream.on('close', () => resolve());
     });
+    stream.resume();
 
     await vi.waitFor(() => {
       expect(spawnCount).toBeGreaterThanOrEqual(4);
