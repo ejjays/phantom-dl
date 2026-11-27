@@ -148,7 +148,7 @@ export default function HomeScreen() {
   }, [showBubble]);
 
   useEffect(() => {
-    if (!url.trim() || looksLikeLink(url)) return;
+    if (!url.trim() || looksLikeLink(url)) return undefined;
     const timer = window.setTimeout(() => {
       const now = Date.now();
       if (now - lastBadLinkAt.current < BAD_LINK_COOLDOWN_MS) return;
@@ -183,7 +183,7 @@ export default function HomeScreen() {
   }, [loading, showBubble]);
 
   useEffect(() => {
-    if (status !== 'completed') return;
+    if (status !== 'completed') return undefined;
     setFlagVisible(true);
     showBubble({
       message: pickLine(SUCCESS_LINES, 'phantom_success'),
@@ -227,9 +227,9 @@ export default function HomeScreen() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const shared = params.get('url') || params.get('text') || params.get('title');
-    if (!shared) return;
+    if (!shared) return undefined;
     const match = shared.match(/https?:\/\/[^\s]+/);
-    if (!match) return;
+    if (!match) return undefined;
     setUrl(match[0]);
     window.history.replaceState({}, document.title, window.location.pathname);
     const timer = window.setTimeout(() => {

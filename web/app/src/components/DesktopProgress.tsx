@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
@@ -61,6 +67,208 @@ interface LogData {
   text: string;
 }
 
+const humanize = (text: string) => {
+  if (!text) return '';
+  if (text.includes('ISRC_IDENTIFIED:')) {
+    const isrc = text.split('ISRC_IDENTIFIED:')[1].trim();
+    return `FINGERPRINT: ${isrc}`;
+  }
+
+  let cleaned = text
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/(^\w|\s\w)/g, (letter) => letter.toUpperCase())
+    .trim();
+
+  cleaned = cleaned
+    .replace(/Api/gi, 'API')
+    .replace(/Isrc/gi, 'ISRC')
+    .replace(/Tls/gi, 'TLS')
+    .replace(/Sse/gi, 'SSE')
+    .replace(/Youtube/gi, 'YouTube')
+    .replace(/Spotify/gi, 'Spotify')
+    .replace(/\bId\b/gi, 'ID')
+    .replace(/\bAi\b/gi, 'AI')
+    .replace(/Cdn/gi, 'CDN')
+    .replace(/Dns/gi, 'DNS')
+    .replace(/Muxer/gi, 'MUXER')
+    .replace(/Http/gi, 'HTTP');
+
+  return cleaned;
+};
+
+const toDisplayLogs = (logs: string[]): LogData[] =>
+  logs
+    .map((log, index) => {
+      if (typeof log !== 'string')
+        return { id: `log-${index}`, text: '', timestamp: '', type: 'info' };
+
+      const match = log.match(/^(\[[\d:.]+\])\s*(.*)/);
+      const rawText = match ? match[2] : log;
+      const timestamp = match ? match[1] : '';
+      const withoutPrefix = rawText.replace(/^[A-Za-z0-9_\-\s]+:\s*/, '');
+
+      return {
+        id: `${timestamp}-${rawText.substring(0, 20)}-${index}`,
+        text: humanize(withoutPrefix),
+        timestamp,
+        type: log.includes('SYSTEM_ALERT') ? 'error' : 'info',
+      };
+    })
+    .filter((item) => item.text);
+
+interface ProgressDetailsProps {
+  label: string;
+  pct: number;
+  error: string;
+  isPickerOpen: boolean;
+  emePhase: 'download' | 'mux' | null;
+  emeProgress: number;
+  emeBytes: { received: number; total: number } | null;
+  subStatus: string;
+  videoTitle: string;
+  displayLogs: LogData[];
+  showDetails: boolean;
+  logRef: RefObject<HTMLDivElement | null>;
+  onToggleDetails: () => void;
+  onClose: () => void;
+  onCancel?: () => void;
+}
+
+const ProgressDetails = ({
+  label,
+  pct,
+  error,
+  isPickerOpen,
+  emePhase,
+  emeProgress,
+  emeBytes,
+  subStatus,
+  videoTitle,
+  displayLogs,
+  showDetails,
+  logRef,
+  onToggleDetails,
+  onClose,
+  onCancel,
+}: ProgressDetailsProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 8, scale: 0.97 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    exit={{ opacity: 0, y: 8, scale: 0.97 }}
+    transition={{ duration: 0.2, ease: 'easeOut' }}
+    className="absolute bottom-[68px] left-0 w-[340px] rounded-[24px] border border-cyan-400/20 bg-[#080d18]/95 p-5 shadow-[0_24px_60px_-20px_rgba(6,182,212,0.35)] backdrop-blur-2xl"
+  >
+    <div className="mb-4 flex items-center justify-between gap-2">
+      <span
+        className={`text-sm font-semibold ${error ? 'text-red-300' : 'text-white/85'}`}
+      >
+        {label}
+      </span>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close progress details"
+        className="rounded-lg p-1 text-white/40 transition-colors hover:bg-white/5 hover:text-white/80"
+      >
+        <X size={15} />
+      </button>
+    </div>
+
+    {!isPickerOpen && emePhase === null && (
+      <>
+        <div className="mb-1.5 flex items-center justify-between font-mono text-[11px] text-cyan-200/70">
+          <span>{Math.floor(pct)}%</span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-cyan-600 to-cyan-300"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </>
+    )}
+
+    {emePhase && (
+      <div className="mb-3">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-[11px] text-purple-200/90">
+            On-device {emePhase === 'mux' ? 'muxing' : 'download'}
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="font-mono text-[11px] text-purple-200">
+              {Math.floor(emeProgress || 0)}%
+            </span>
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                aria-label="Cancel on-device processing"
+                className="rounded-md p-0.5 text-purple-200/60 hover:bg-red-400/10 hover:text-red-300"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-400"
+            style={{ width: `${emeProgress || 0}%` }}
+          />
+        </div>
+        {emePhase === 'download' &&
+          emeBytes &&
+          emeBytes.total > 0 && (
+            <div className="mt-1.5 font-mono text-[10px] text-purple-200/60">
+              {formatSize(emeBytes.received)} / {formatSize(emeBytes.total)}
+            </div>
+          )}
+        <EmePhaseCaption phase={emePhase} progress={emeProgress} />
+      </div>
+    )}
+
+    {subStatus && !emePhase && (
+      <p className="mt-3 text-[11px] leading-relaxed text-white/45">
+        {subStatus}
+      </p>
+    )}
+
+    {videoTitle && (
+      <p className="mt-3 truncate border-t border-white/10 pt-3 text-[11px] text-white/60">
+        {videoTitle}
+      </p>
+    )}
+
+    {displayLogs.length > 0 && (
+      <div className="mt-3 border-t border-white/10 pt-3">
+        <button
+          type="button"
+          onClick={onToggleDetails}
+          aria-expanded={showDetails}
+          className="flex w-full items-center justify-between text-[11px] text-white/45 transition-colors hover:text-white/70"
+        >
+          Details
+          <ChevronDown
+            size={14}
+            className={`transition-transform ${showDetails ? 'rotate-180' : ''}`}
+          />
+        </button>
+        {showDetails && (
+          <div
+            ref={logRef}
+            className="mt-2 max-h-40 overflow-y-auto font-mono scrollbar-thin scrollbar-track-transparent scrollbar-thumb-cyan-500/20"
+          >
+            {displayLogs.map((log) => (
+              <LogLine key={log.id} log={log} />
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+  </motion.div>
+);
+
 const DesktopProgress = ({ onCancel }: DesktopProgressProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -78,57 +286,7 @@ const DesktopProgress = ({ onCancel }: DesktopProgressProps) => {
   const emeBytes = useAppStore((state) => state.emeBytes);
   const logRef = useRef<HTMLDivElement>(null);
 
-  const humanize = useCallback((text: string) => {
-    if (!text) return '';
-    if (text.includes('ISRC_IDENTIFIED:')) {
-      const isrc = text.split('ISRC_IDENTIFIED:')[1].trim();
-      return `FINGERPRINT: ${isrc}`;
-    }
-
-    let cleaned = text
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/(^\w|\s\w)/g, (letter) => letter.toUpperCase())
-      .trim();
-
-    cleaned = cleaned
-      .replace(/Api/gi, 'API')
-      .replace(/Isrc/gi, 'ISRC')
-      .replace(/Tls/gi, 'TLS')
-      .replace(/Sse/gi, 'SSE')
-      .replace(/Youtube/gi, 'YouTube')
-      .replace(/Spotify/gi, 'Spotify')
-      .replace(/\bId\b/gi, 'ID')
-      .replace(/\bAi\b/gi, 'AI')
-      .replace(/Cdn/gi, 'CDN')
-      .replace(/Dns/gi, 'DNS')
-      .replace(/Muxer/gi, 'MUXER')
-      .replace(/Http/gi, 'HTTP');
-
-    return cleaned;
-  }, []);
-
-  const displayLogs: LogData[] = useMemo(() => {
-    return (desktopLogs || [])
-      .map((log, index) => {
-        if (typeof log !== 'string')
-          return { id: `log-${index}`, text: '', timestamp: '', type: 'info' };
-
-        const match = log.match(/^(\[[\d:.]+\])\s*(.*)/);
-        const rawText = match ? match[2] : log;
-        const timestamp = match ? match[1] : '';
-        const withoutPrefix = rawText.replace(/^[A-Za-z0-9_\-\s]+:\s*/, '');
-        const text = humanize(withoutPrefix);
-
-        return {
-          id: `${timestamp}-${rawText.substring(0, 20)}-${index}`,
-          text,
-          timestamp,
-          type: log.includes('SYSTEM_ALERT') ? 'error' : 'info',
-        };
-      })
-      .filter((item) => item.text);
-  }, [desktopLogs, humanize]);
+  const displayLogs = useMemo(() => toDisplayLogs(desktopLogs), [desktopLogs]);
 
   useEffect(() => {
     if (showDetails && logRef.current) {
@@ -185,122 +343,23 @@ const DesktopProgress = ({ onCancel }: DesktopProgressProps) => {
 
             <AnimatePresence>
               {expanded && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="absolute bottom-[68px] left-0 w-[340px] rounded-[24px] border border-cyan-400/20 bg-[#080d18]/95 p-5 shadow-[0_24px_60px_-20px_rgba(6,182,212,0.35)] backdrop-blur-2xl"
-                >
-                  <div className="mb-4 flex items-center justify-between gap-2">
-                    <span
-                      className={`text-sm font-semibold ${error ? 'text-red-300' : 'text-white/85'}`}
-                    >
-                      {label}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setExpanded(false)}
-                      aria-label="Close progress details"
-                      className="rounded-lg p-1 text-white/40 transition-colors hover:bg-white/5 hover:text-white/80"
-                    >
-                      <X size={15} />
-                    </button>
-                  </div>
-
-                  {!isPickerOpen && emePhase === null && (
-                    <>
-                      <div className="mb-1.5 flex items-center justify-between font-mono text-[11px] text-cyan-200/70">
-                        <span>{Math.floor(pct)}%</span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-600 to-cyan-300"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {emePhase && (
-                    <div className="mb-3">
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <span className="text-[11px] text-purple-200/90">
-                          On-device {emePhase === 'mux' ? 'muxing' : 'download'}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono text-[11px] text-purple-200">
-                            {Math.floor(emeProgress || 0)}%
-                          </span>
-                          {onCancel && (
-                            <button
-                              type="button"
-                              onClick={onCancel}
-                              aria-label="Cancel on-device processing"
-                              className="rounded-md p-0.5 text-purple-200/60 hover:bg-red-400/10 hover:text-red-300"
-                            >
-                              <X size={14} />
-                            </button>
-                          )}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-400"
-                          style={{ width: `${emeProgress || 0}%` }}
-                        />
-                      </div>
-                      {emePhase === 'download' &&
-                        emeBytes &&
-                        emeBytes.total > 0 && (
-                          <div className="mt-1.5 font-mono text-[10px] text-purple-200/60">
-                            {formatSize(emeBytes.received)} /{' '}
-                            {formatSize(emeBytes.total)}
-                          </div>
-                        )}
-                      <EmePhaseCaption phase={emePhase} progress={emeProgress} />
-                    </div>
-                  )}
-
-                  {subStatus && !emePhase && (
-                    <p className="mt-3 text-[11px] leading-relaxed text-white/45">
-                      {subStatus}
-                    </p>
-                  )}
-
-                  {videoTitle && (
-                    <p className="mt-3 truncate border-t border-white/10 pt-3 text-[11px] text-white/60">
-                      {videoTitle}
-                    </p>
-                  )}
-
-                  {displayLogs.length > 0 && (
-                    <div className="mt-3 border-t border-white/10 pt-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowDetails((value) => !value)}
-                        aria-expanded={showDetails}
-                        className="flex w-full items-center justify-between text-[11px] text-white/45 transition-colors hover:text-white/70"
-                      >
-                        Details
-                        <ChevronDown
-                          size={14}
-                          className={`transition-transform ${showDetails ? 'rotate-180' : ''}`}
-                        />
-                      </button>
-                      {showDetails && (
-                        <div
-                          ref={logRef}
-                          className="mt-2 max-h-40 overflow-y-auto font-mono scrollbar-thin scrollbar-track-transparent scrollbar-thumb-cyan-500/20"
-                        >
-                          {displayLogs.map((log) => (
-                            <LogLine key={log.id} log={log} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </motion.div>
+                <ProgressDetails
+                  label={label}
+                  pct={pct}
+                  error={error}
+                  isPickerOpen={isPickerOpen}
+                  emePhase={emePhase}
+                  emeProgress={emeProgress}
+                  emeBytes={emeBytes}
+                  subStatus={subStatus}
+                  videoTitle={videoTitle}
+                  displayLogs={displayLogs}
+                  showDetails={showDetails}
+                  logRef={logRef}
+                  onToggleDetails={() => setShowDetails((value) => !value)}
+                  onClose={() => setExpanded(false)}
+                  onCancel={onCancel}
+                />
               )}
             </AnimatePresence>
           </motion.div>

@@ -26,7 +26,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "phantom-x": "./dist/cli.js"
+    "phantom-x": "./cli.js"
   },
   "exports": {
     ".": {
@@ -115,6 +115,7 @@
     }
   },
   "files": [
+    "cli.js",
     "dist",
     "LICENSE"
   ],

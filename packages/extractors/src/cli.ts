@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-// skipcq: JS-0271
 import { spawn } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
 import { Readable, Writable } from 'node:stream';
