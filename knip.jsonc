@@ -32,6 +32,9 @@
         "@testing-library/jest-dom",
         "@vitejs/plugin-react",
         "vite-plugin-sitemap",
+        // updates page is unrouted while the app is home-only, kept for the
+        // next port pass so the feature + supabase wiring stay intact
+        "@supabase/supabase-js",
       ],
     },
     "mobile": {

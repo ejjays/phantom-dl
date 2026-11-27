@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  getSanitizedFilename,
-  generateUUID,
-  getQualityLabel,
-  formatSize,
-} from '../src/lib/utils';
+import { getSanitizedFilename } from '../src/lib/utils';
 
 describe('getSanitizedFilename', () => {
   it('appends the format extension', () => {
@@ -44,37 +39,5 @@ describe('getSanitizedFilename', () => {
 
   it('falls back to "video" when nothing usable remains', () => {
     expect(getSanitizedFilename('<<<>>>', '', 'mp4', false)).toBe('video.mp4');
-  });
-});
-
-describe('generateUUID', () => {
-  it('produces a v4-shaped uuid', () => {
-    expect(generateUUID()).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
-    );
-  });
-
-  it('produces unique values across calls', () => {
-    expect(generateUUID()).not.toBe(generateUUID());
-  });
-});
-
-describe('getQualityLabel uncovered branches', () => {
-  it('maps 4320 to 8K', () => {
-    expect(getQualityLabel('4320p')).toBe('8K');
-  });
-
-  it('maps 1440 to 2K', () => {
-    expect(getQualityLabel('1440p')).toBe('2K');
-  });
-
-  it('returns Unknown for undefined', () => {
-    expect(getQualityLabel()).toBe('Unknown');
-  });
-});
-
-describe('formatSize edge', () => {
-  it('treats zero bytes as unknown', () => {
-    expect(formatSize(0)).toBe('Unknown size');
   });
 });

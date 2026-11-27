@@ -57,7 +57,7 @@ const MobileStatusCard = ({ onCancel }: MobileProgressProps) => {
   const isVisible = status !== 'idle' || loading || error;
 
   return (
-    <div className="lg:hidden w-full max-w-md mt-8 flex items-center justify-center">
+    <div className="xl:hidden w-full max-w-md mt-8 flex items-center justify-center">
       <AnimatePresence mode="wait">
         {isVisible ? (
           <motion.div

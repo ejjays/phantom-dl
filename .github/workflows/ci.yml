@@ -167,6 +167,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           build-shared: 'true'
+          build-web-mux: 'true'
 
       - name: Typecheck and lint
         run: |
@@ -321,6 +322,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           build-extractors: 'true'
           build-shared: 'true'
+          build-web-mux: 'true'
 
       - name: Knip
         run: npx --no-install knip
@@ -358,6 +360,7 @@ jobs:
         run: |
           npm ci --ignore-scripts
           (cd web/shared && npm run build)
+          (cd packages/web-mux && npm run build)
           VER=$(python3 -c "import json; print(json.load(open('package-lock.json'))['packages']['node_modules/lightningcss']['version'])")
           OXVER=$(python3 -c "import json; print(json.load(open('package-lock.json'))['packages']['node_modules/@tailwindcss/oxide']['version'])")
           RVER=$(python3 -c "import json; print(json.load(open('package-lock.json'))['packages']['node_modules/rolldown']['version'])")

@@ -108,7 +108,9 @@ describe('mp4-only output: vp9 webm sources remux to mp4', () => {
       } as unknown as Parameters<typeof streamDownload>[3]
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      expect(getYtdlpArgs()).toBeDefined();
+    });
 
     const args = getYtdlpArgs();
     expect(args).toBeDefined();
@@ -158,7 +160,9 @@ describe('mp4-only output: vp9 webm sources remux to mp4', () => {
       } as unknown as Parameters<typeof streamDownload>[3]
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      expect(getYtdlpArgs()).toBeDefined();
+    });
 
     const args = getYtdlpArgs();
     expect(args).toBeDefined();

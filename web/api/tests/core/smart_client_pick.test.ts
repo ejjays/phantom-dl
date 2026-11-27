@@ -66,7 +66,9 @@ async function runWithFormat(
     } as unknown as Parameters<typeof streamDownload>[3]
   );
 
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await vi.waitFor(() => {
+    expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+  });
 }
 
 describe('Smart client selection', () => {

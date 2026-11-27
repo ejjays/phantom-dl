@@ -74,7 +74,9 @@ async function runAndGetArgs(cookieArgs: string[]): Promise<string[]> {
     cookieArgs
   );
 
-  await new Promise((resolve) => setTimeout(resolve, 200));
+  await vi.waitFor(() => {
+    expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+  });
   const args = mockedSpawn.mock.calls[0]?.[1] as string[] | undefined;
   return args || [];
 }

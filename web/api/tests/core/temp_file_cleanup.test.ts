@@ -60,7 +60,9 @@ const mockedSpawn = vi.mocked(spawn);
 const TMP_DIR = path.join(CACHE_DIR, 'tmp');
 
 async function getTempPath(): Promise<string> {
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await vi.waitFor(() => {
+    expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+  });
   const args = mockedSpawn.mock.calls[0][1] as string[];
   return args[args.lastIndexOf('-o') + 1];
 }
@@ -104,9 +106,10 @@ describe('temp file cleanup on abort/failure (H1)', () => {
 
     // non-retryable failure (empty stderr)
     proc.emit('close', 1);
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await vi.waitFor(() => {
+      expect(fs.existsSync(tempPath)).toBe(false);
+    });
 
-    expect(fs.existsSync(tempPath)).toBe(false);
     expect(fs.existsSync(sibling)).toBe(false);
   });
 
@@ -128,8 +131,8 @@ describe('temp file cleanup on abort/failure (H1)', () => {
     fs.writeFileSync(tempPath, 'PARTIAL');
 
     proc.emit('close', null);
-    await new Promise((resolve) => setTimeout(resolve, 250));
-
-    expect(fs.existsSync(tempPath)).toBe(false);
+    await vi.waitFor(() => {
+      expect(fs.existsSync(tempPath)).toBe(false);
+    });
   });
 });

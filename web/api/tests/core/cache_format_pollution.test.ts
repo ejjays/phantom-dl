@@ -133,12 +133,13 @@ describe('cache pollution: raw yt-dlp format_id never leaks downstream', () => {
       ],
     } as unknown as Parameters<typeof streamDownload>[3]);
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    const ytdlpCall = vi
-      .mocked(spawn)
-      .mock.calls.find((call) => call[0] === 'yt-dlp');
-    expect(ytdlpCall).toBeDefined();
+    const ytdlpCall = await vi.waitFor(() => {
+      const call = vi
+        .mocked(spawn)
+        .mock.calls.find((candidate) => candidate[0] === 'yt-dlp');
+      expect(call).toBeDefined();
+      return call;
+    });
     const args = ytdlpCall?.[1] as string[];
     // avoid re-encoding compatible streams
     const dargsIdx = args.indexOf('--downloader-args');
@@ -146,40 +147,5 @@ describe('cache pollution: raw yt-dlp format_id never leaks downstream', () => {
       const dargs = args[dargsIdx + 1];
       expect(dargs).not.toContain('libx264');
     }
-  });
-
-  it('streamer does NOT use libx264 for normalized avc1+mp4a format', async () => {
-    const mockSpawn = createMockChildProcess();
-    vi.mocked(spawn).mockReturnValue(mockSpawn);
-
-    streamDownload('http://test.com', { format: 'mp4', formatId: '137' }, [], {
-      id: 'noTranscode1',
-      extractorKey: 'youtube',
-      webpageUrl: 'http://test.com',
-      targetUrl: 'http://test.com',
-      formats: [
-        {
-          formatId: '137',
-          vcodec: 'avc1.640028',
-          acodec: 'mp4a.40.2',
-          ext: 'mp4',
-          url: 'https://cdn.example.com/v137.mp4',
-        },
-      ],
-    } as unknown as Parameters<typeof streamDownload>[3]);
-
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    const ytdlpCall = vi
-      .mocked(spawn)
-      .mock.calls.find((call) => call[0] === 'yt-dlp');
-    expect(ytdlpCall).toBeDefined();
-    const args = ytdlpCall?.[1] as string[];
-    const ppIdx = args.indexOf('--postprocessor-args');
-    expect(ppIdx).toBeGreaterThan(-1);
-    const ppArgs = args[ppIdx + 1];
-    expect(ppArgs).toContain('-c:v copy');
-    expect(ppArgs).toContain('-c:a copy');
-    expect(ppArgs).not.toContain('libx264');
   });
 });

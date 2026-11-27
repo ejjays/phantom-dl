@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
+import { ExtractorError } from '@phantom/extractors';
 import { getInfo, getStream } from '../../src/services/extractors/tiktok.js';
 import { z } from 'zod';
 import { CaseSchema } from '../utils/schema.js';
@@ -20,6 +21,13 @@ describe('TikTok JS Extractor (Data-Driven)', () => {
   });
 
   it.each(testCases)('should extract metadata for $name', async (testCase) => {
+    if (testCase.expected.status === 'error') {
+      await expect(getInfo(testCase.url)).rejects.toBeInstanceOf(
+        ExtractorError
+      );
+      return;
+    }
+
     const info = await getInfo(testCase.url);
     assertOutcome(info, testCase.expected);
 

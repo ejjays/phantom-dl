@@ -78,9 +78,6 @@ body {
   .animate-shimmer {
     animation: shimmer 1.5s infinite;
   }
-  .btns {
-    @apply flex items-center gap-2 text-black font-semibold py-2 justify-center flex-1 px-1 text-sm md:text-base;
-  }
 }
 
 @keyframes float {
@@ -116,6 +113,213 @@ body {
 
 .animate-pulse-subtle {
   animation: pulse-subtle 3s infinite ease-in-out;
+}
+
+.moon-orb {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  width: 72px;
+  height: 72px;
+  border-radius: 9999px;
+  background: #f9f9fb;
+  box-shadow:
+    0 0 50px 0 rgba(193, 119, 241, 0.85),
+    0 0 50px 0 rgba(135, 42, 211, 0.85),
+    inset 0 0 26px -10px #9b40fc;
+  pointer-events: none;
+  z-index: 0;
+  transform: translateX(-260px);
+  animation: moon-wipe 1100ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+.moon-orb-idle {
+  animation: none;
+  transform: translateX(0);
+}
+
+@keyframes moon-wipe {
+  from {
+    transform: translateX(-260px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.ghost-float,
+.ghost-shadow,
+.ghost-eyes,
+.ghost-mouth,
+.ghost-gaze,
+.ghost-flutter {
+  transform-box: view-box;
+}
+
+.ghost-float {
+  animation: ghost-float 4000ms ease-in-out infinite;
+}
+
+.ghost-shadow {
+  transform-origin: 200px 385px;
+  animation: ghost-shadow-pulse 4000ms ease-in-out infinite;
+}
+
+.ghost-eyes {
+  transform-origin: 200px 180px;
+  animation: ghost-blink 4200ms infinite;
+}
+
+.ghost-mouth {
+  animation: ghost-mouth 11600ms ease-in-out 2000ms infinite backwards;
+}
+
+.ghost-gaze-down {
+  animation: ghost-gaze-down 2600ms ease-in-out both;
+}
+
+.ghost-gaze-sweep {
+  animation: ghost-gaze-sweep 3300ms ease-in-out both;
+}
+
+.ghost-flag {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 450ms cubic-bezier(0, 0, 0.2, 1),
+    transform 450ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.ghost-flag.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ghost-flutter {
+  transform-origin: 285px 150px;
+  animation: ghost-flutter 2400ms ease-in-out infinite;
+}
+
+.link-ping {
+  animation: link-ping 2000ms cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ghost-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes ghost-shadow-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(0.82);
+    opacity: 0.1;
+  }
+}
+
+@keyframes ghost-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes ghost-mouth {
+  0%,
+  8.62% {
+    d: path("M 187 218 Q 200 225 213 218 Q 200 219 187 218 Z");
+  }
+  11.21%,
+  97.41% {
+    d: path("M 186 213 Q 200 237 214 213 Q 200 207 186 213 Z");
+  }
+  100% {
+    d: path("M 187 218 Q 200 225 213 218 Q 200 219 187 218 Z");
+  }
+}
+
+@keyframes ghost-gaze-down {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  20%,
+  80% {
+    transform: translateY(16px);
+  }
+}
+
+@keyframes ghost-gaze-sweep {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20%,
+  40% {
+    transform: translate(15px, 16px);
+  }
+  60%,
+  80% {
+    transform: translate(-15px, 16px);
+  }
+}
+
+@keyframes ghost-flutter {
+  0%,
+  100% {
+    transform: rotate(0deg) skewY(0deg);
+  }
+  25% {
+    transform: rotate(3deg) skewY(2deg);
+  }
+  50% {
+    transform: rotate(-2deg) skewY(-2deg);
+  }
+  75% {
+    transform: rotate(2deg) skewY(1deg);
+  }
+}
+
+@keyframes link-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost-float,
+  .ghost-shadow,
+  .ghost-eyes,
+  .ghost-mouth,
+  .ghost-gaze,
+  .ghost-flutter,
+  .link-ping {
+    animation: none;
+  }
+
+  .moon-orb {
+    animation: none;
+    transform: translateX(0);
+  }
 }
 
 /* Global Custom Scrollbar */
@@ -234,158 +438,6 @@ body {
   background-size: var(--_line-thickness) 400%;
   background-repeat: no-repeat;
   animation: matrix 1s infinite linear;
-}
-
-.nav-tabs {
-  position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 80;
-  display: flex;
-  justify-content: center;
-  background: linear-gradient(
-    135deg,
-    rgba(30, 10, 50, 0.95),
-    rgba(20, 30, 60, 0.95)
-  );
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(6, 182, 212, 0.3);
-  border-radius: 9999px;
-  padding: 8px 16px;
-  box-shadow:
-    0 0 20px rgba(6, 182, 212, 0.25),
-    0 4px 24px rgba(0, 0, 0, 0.4);
-}
-
-@media (max-width: 767px) {
-  .nav-tabs {
-    flex-direction: row;
-    gap: 12px;
-    padding: 8px 16px;
-    align-items: center;
-  }
-}
-
-@media (min-width: 768px) {
-  .nav-tabs {
-    bottom: auto;
-    left: auto;
-    right: 24px;
-    top: 50%;
-    transform: translateY(-50%);
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px 8px;
-    background: hsl(196.1, 100%, 46.1%);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(6, 182, 212, 0.3);
-    border-radius: 9999px;
-    box-shadow:
-      0 0 20px rgba(6, 182, 212, 0.25),
-      0 4px 24px rgba(0, 0, 0, 0.4);
-  }
-}
-
-.nav-tabs .tooltip-container {
-  position: relative;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-@media (max-width: 767px) {
-  .nav-tabs .tooltip-container {
-    gap: 0;
-    padding: 0;
-  }
-}
-
-@media (min-width: 768px) {
-  .nav-tabs .tooltip-container {
-    gap: 0;
-  }
-}
-
-.nav-tabs .borde-back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.3s ease;
-}
-
-@media (max-width: 767px) {
-  .nav-tabs .borde-back {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-  }
-}
-
-@media (min-width: 768px) {
-  .nav-tabs .borde-back {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-  }
-}
-
-.nav-tabs .nt-icon {
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-}
-
-@media (max-width: 767px) {
-  .nav-tabs .nt-icon {
-    width: 40px;
-    height: 40px;
-    outline: none;
-  }
-}
-
-@media (min-width: 768px) {
-  .nav-tabs .nt-icon {
-    width: 48px;
-    height: 48px;
-  }
-}
-
-.nav-tabs .tooltip {
-  position: absolute;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  white-space: nowrap;
-  top: -32px;
-}
-
-@media (min-width: 768px) {
-  .nav-tabs .tooltip {
-    top: 50%;
-    right: calc(100% + 12px);
-    transform: translateY(-50%);
-  }
-}
-
-.nav-tabs .tooltip.visible {
-  opacity: 1;
-}
-
-.nav-tabs .nt-label {
-  display: none;
 }
 
 /* 404 page scene */

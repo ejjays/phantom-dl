@@ -15,18 +15,6 @@ const FIXTURE_PATH = path.join(
   `phantom_throughput_${process.pid}.bin`
 );
 
-beforeAll(() => {
-  // create large file for throughput testing
-  const buf = Buffer.alloc(FIXTURE_SIZE_MB * MB);
-  // sparse byte pattern for integrity check
-  for (let i = 0; i < buf.length; i += 1024) buf[i] = i & 0xff;
-  fs.writeFileSync(FIXTURE_PATH, buf);
-});
-
-afterAll(() => {
-  if (fs.existsSync(FIXTURE_PATH)) fs.unlinkSync(FIXTURE_PATH);
-});
-
 vi.mock('node:child_process', async () => {
   const actual =
     await vi.importActual<typeof import('node:child_process')>(
@@ -93,52 +81,66 @@ vi.mock('../../src/services/extractors/youtube/index.js', () => ({
     ),
 }));
 
-import app from '../../src/app.js';
+describe.skipIf(process.env.VITEST_INCLUDE_MANUAL !== '1')(
+  '/convert — end-to-end pipeline throughput',
+  () => {
+    beforeAll(() => {
+      // create large file for throughput testing
+      const buf = Buffer.alloc(FIXTURE_SIZE_MB * MB);
+      // sparse byte pattern for integrity check
+      for (let i = 0; i < buf.length; i += 1024) buf[i] = i & 0xff;
+      fs.writeFileSync(FIXTURE_PATH, buf);
+    });
 
-describe('/convert — end-to-end pipeline throughput', () => {
-  it(`pipes ${FIXTURE_SIZE_MB}MB end-to-end and logs MB/s + TTFB`, async () => {
-    let firstByteAt = 0;
-    let lastByteAt = 0;
-    let totalReceived = 0;
-    const t0 = Date.now();
+    afterAll(() => {
+      if (fs.existsSync(FIXTURE_PATH)) fs.unlinkSync(FIXTURE_PATH);
+    });
 
-    const res = await request(app)
-      .get('/convert')
-      .query({
-        url: 'https://www.youtube.com/watch?v=throughput123',
-        format: 'm4a',
-        formatId: '140',
-        id: 'throughputClient',
-        token: 'throughputClient',
-        title: 'Throughput Bench',
-        artist: 'Bench',
-      })
-      .buffer(true)
-      .parse((response, callback) => {
-        const chunks: Buffer[] = [];
-        response.on('data', (chunk: Buffer) => {
-          if (firstByteAt === 0) firstByteAt = Date.now();
-          lastByteAt = Date.now();
-          totalReceived += chunk.length;
-          chunks.push(chunk);
+    it(`pipes ${FIXTURE_SIZE_MB}MB end-to-end and logs MB/s + TTFB`, async () => {
+      let firstByteAt = 0;
+      let lastByteAt = 0;
+      let totalReceived = 0;
+      const t0 = Date.now();
+
+      const { default: app } = await import('../../src/app.js');
+      const res = await request(app)
+        .get('/convert')
+        .query({
+          url: 'https://www.youtube.com/watch?v=throughput123',
+          format: 'm4a',
+          formatId: '140',
+          id: 'throughputClient',
+          token: 'throughputClient',
+          title: 'Throughput Bench',
+          artist: 'Bench',
+        })
+        .buffer(true)
+        .parse((response, callback) => {
+          const chunks: Buffer[] = [];
+          response.on('data', (chunk: Buffer) => {
+            if (firstByteAt === 0) firstByteAt = Date.now();
+            lastByteAt = Date.now();
+            totalReceived += chunk.length;
+            chunks.push(chunk);
+          });
+          response.on('end', () => callback(null, Buffer.concat(chunks)));
         });
-        response.on('end', () => callback(null, Buffer.concat(chunks)));
-      });
 
-    const totalMs = Math.max(1, Date.now() - t0);
-    const ttfbMs = firstByteAt > 0 ? firstByteAt - t0 : -1;
-    const streamingMs = Math.max(1, lastByteAt - firstByteAt);
-    const wallMbps = totalReceived / MB / (totalMs / 1000);
-    const streamMbps = totalReceived / MB / (streamingMs / 1000);
+      const totalMs = Math.max(1, Date.now() - t0);
+      const ttfbMs = firstByteAt > 0 ? firstByteAt - t0 : -1;
+      const streamingMs = Math.max(1, lastByteAt - firstByteAt);
+      const wallMbps = totalReceived / MB / (totalMs / 1000);
+      const streamMbps = totalReceived / MB / (streamingMs / 1000);
 
-    console.log(
-      `[Throughput][/convert] size=${FIXTURE_SIZE_MB}MB total=${totalMs}ms TTFB=${ttfbMs}ms streamingOnly=${streamingMs}ms => wall=${wallMbps.toFixed(2)} MB/s, stream=${streamMbps.toFixed(2)} MB/s`
-    );
+      console.log(
+        `[Throughput][/convert] size=${FIXTURE_SIZE_MB}MB total=${totalMs}ms TTFB=${ttfbMs}ms streamingOnly=${streamingMs}ms => wall=${wallMbps.toFixed(2)} MB/s, stream=${streamMbps.toFixed(2)} MB/s`
+      );
 
-    expect(res.status).toBe(200);
-    expect(totalReceived).toBe(FIXTURE_SIZE_MB * MB);
-    // streaming-only throughput floor
-    expect(streamMbps).toBeGreaterThan(20);
-    expect(ttfbMs).toBeGreaterThanOrEqual(0);
-  }, 60_000);
-});
+      expect(res.status).toBe(200);
+      expect(totalReceived).toBe(FIXTURE_SIZE_MB * MB);
+      // streaming-only throughput floor
+      expect(streamMbps).toBeGreaterThan(20);
+      expect(ttfbMs).toBeGreaterThanOrEqual(0);
+    }, 60_000);
+  }
+);

@@ -19,7 +19,9 @@
     "bench:convert": "node scripts/bench-convert.js",
     "lint": "bash ../scripts/lint-changed.sh",
     "lint:all": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:unit": "NODE_ENV=test NODE_OPTIONS='--import ./scripts/termux-shim.js --max-old-space-size=512' npx vitest run tests/core tests/extractors tests/flows tests/services",
+    "test:integration": "NODE_ENV=test npx vitest run tests/api tests/security"
   },
   "keywords": [],
   "author": "ejjays",

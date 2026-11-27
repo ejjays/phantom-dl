@@ -2,7 +2,11 @@ import path from 'node:path';
 import { logger } from '../infra/logger.util.js';
 import os from 'node:os';
 import { lookup } from 'node:dns/promises';
-import { lookup as dnsLookup, type LookupAddress, type LookupOptions } from 'node:dns';
+import {
+  lookup as dnsLookup,
+  type LookupAddress,
+  type LookupOptions,
+} from 'node:dns';
 import { isIP } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { URL } from 'node:url';
@@ -72,32 +76,36 @@ export function ssrfLookup(
     family?: number
   ) => void
 ): void {
-  return dnsLookup(hostname, options as LookupOptions, (error, address, family) => {
-    if (error) {
-      callback(error, address as unknown as string, family);
-      return;
-    }
-
-    const isArray = Array.isArray(address);
-    const addrsToCheck = isArray
-      ? (address as LookupAddress[])
-      : [{ address: address as unknown as string }];
-
-    for (const addr of addrsToCheck) {
-      if (!isSafeIp(addr.address)) {
-        callback(
-          new SsrfError(
-            `[SSRF BLOCK] Resolution to internal IP blocked: ${addr.address}`
-          ),
-          address as unknown as string,
-          family
-        );
+  return dnsLookup(
+    hostname,
+    options as LookupOptions,
+    (error, address, family) => {
+      if (error) {
+        callback(error, address as unknown as string, family);
         return;
       }
-    }
 
-    callback(null, address as unknown as string, family);
-  });
+      const isArray = Array.isArray(address);
+      const addrsToCheck = isArray
+        ? (address as LookupAddress[])
+        : [{ address: address as unknown as string }];
+
+      for (const addr of addrsToCheck) {
+        if (!isSafeIp(addr.address)) {
+          callback(
+            new SsrfError(
+              `[SSRF BLOCK] Resolution to internal IP blocked: ${addr.address}`
+            ),
+            address as unknown as string,
+            family
+          );
+          return;
+        }
+      }
+
+      callback(null, address as unknown as string, family);
+    }
+  );
 }
 
 const ssrfSafeAgent = new Agent({
@@ -228,7 +236,17 @@ export const concurrencyGuard = (limit = 2) => {
     const clientIp = req.ip || 'unknown';
     const clientId = (req.query?.id || req.body?.id) as string | undefined;
 
-    const hasLock = await acquireLock(clientIp, limit);
+    let hasLock: boolean;
+    try {
+      hasLock = await acquireLock(clientIp, limit);
+    } catch (error: unknown) {
+      logger.warn(
+        '[Security] concurrency guard unavailable:',
+        (error as Error).message
+      );
+      res.status(503).json({ error: 'Concurrency guard unavailable.' });
+      return;
+    }
     if (!hasLock) {
       if (clientId) {
         sendEvent(clientId, {

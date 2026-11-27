@@ -66,6 +66,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           build-extractors: 'true'
           build-shared: 'true'
+          build-web-mux: 'true'
 
       - name: Build api
         run: |

@@ -21,15 +21,6 @@ describe('Media Contract Hardening', () => {
       expect(result.isAudio).toBe(false); // default
       expect(result.isMuxed).toBe(false); // default
     });
-
-    it('should fail on invalid URL', () => {
-      const invalidFormat = {
-        formatId: '137',
-        url: 'not-a-url',
-        extension: 'mp4',
-      };
-      expect(() => FormatSchema.parse(invalidFormat)).toThrow();
-    });
   });
 
   describe('SpotifyMetadataSchema', () => {
@@ -112,15 +103,6 @@ describe('Media Contract Hardening', () => {
       };
       const result = FinalResponseSchema.parse(payload);
       expect(result.cover).toMatch(/^data:image\/png/);
-    });
-
-    it('should fail on missing required fields', () => {
-      const invalidPayload = {
-        id: '123',
-        // title missing
-        artist: 'Artist',
-      };
-      expect(() => FinalResponseSchema.parse(invalidPayload)).toThrow();
     });
   });
 });

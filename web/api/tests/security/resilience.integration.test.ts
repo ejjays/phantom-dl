@@ -27,15 +27,13 @@ describe('Infrastructure Fault Injection', () => {
       new Error('Redis command timeout (ETIMEDOUT)')
     );
 
-    const res = await request(app)
-      .post('/convert')
-      .send({
-        url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-        format: 'mp3',
-      });
+    const res = await request(app).post('/convert').send({
+      url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+      format: 'mp3',
+    });
 
     // check Redis
-    // expect 500
-    expect(res.status).toBe(500);
+    // expect 503
+    expect(res.status).toBe(503);
   });
 });

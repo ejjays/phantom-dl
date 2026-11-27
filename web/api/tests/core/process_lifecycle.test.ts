@@ -40,11 +40,4 @@ describe('Stream process lifecycle + cleanup', () => {
     expect(totalBytes.value).toBe('chunk1chunk2'.length);
     expect(sendEvent).toHaveBeenCalled();
   });
-
-  it('exposes a kill handle for the caller to terminate on client disconnect', () => {
-    const proc = createMockChildProcess();
-    expect(typeof proc.kill).toBe('function');
-    proc.kill('SIGKILL');
-    expect(proc.kill).toHaveBeenCalledWith('SIGKILL');
-  });
 });

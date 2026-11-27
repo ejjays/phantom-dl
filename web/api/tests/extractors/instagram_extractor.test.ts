@@ -3,6 +3,7 @@ import {
   getInfo,
   getStream,
 } from '../../src/services/extractors/instagram/index.js';
+import { ExtractorError } from '@phantom/extractors';
 import { IG_APP_ID } from '@phantom/extractors/instagram/constants';
 import { server } from '../setup.js';
 import { http, HttpResponse } from 'msw';
@@ -240,8 +241,7 @@ describe('Instagram Gold Standard (2026)', () => {
       )
     );
 
-    const info = await getInfo(REEL);
-    expect(info).toBeNull();
+    await expect(getInfo(REEL)).rejects.toBeInstanceOf(ExtractorError);
     // fail-fast: must not fall through to embed path on rate-limit
     expect(embedCalled).toBe(false);
   });

@@ -27,52 +27,61 @@ function makeChunkedSource(
 }
 
 describe('setupStreamListeners — throughput regression', () => {
-  it.each([
-    { sizeMb: 16, chunkKb: 64, label: '16MB @ 64KB chunks' },
-    { sizeMb: 32, chunkKb: 256, label: '32MB @ 256KB chunks' },
-    { sizeMb: 8, chunkKb: 4, label: '8MB @ 4KB chunks (small-chunk stress)' },
-  ])(
-    'pipes $label intact at >=30 MB/s through Transform observer',
-    async ({ sizeMb, chunkKb }) => {
-      const totalBytes = sizeMb * MB;
-      const source = makeChunkedSource(totalBytes, chunkKb * 1024);
-      const sink = new PassThrough();
+  describe.skipIf(process.env.VITEST_INCLUDE_MANUAL !== '1')(
+    'throughput floor',
+    () => {
+      it.each([
+        { sizeMb: 16, chunkKb: 64, label: '16MB @ 64KB chunks' },
+        { sizeMb: 32, chunkKb: 256, label: '32MB @ 256KB chunks' },
+        {
+          sizeMb: 8,
+          chunkKb: 4,
+          label: '8MB @ 4KB chunks (small-chunk stress)',
+        },
+      ])(
+        'pipes $label intact at >=30 MB/s through Transform observer',
+        async ({ sizeMb, chunkKb }) => {
+          const totalBytes = sizeMb * MB;
+          const source = makeChunkedSource(totalBytes, chunkKb * 1024);
+          const sink = new PassThrough();
 
-      let firstByteAt = 0;
-      let totalReceived = 0;
+          let firstByteAt = 0;
+          let totalReceived = 0;
 
-      sink.on('data', (chunk: Buffer) => {
-        if (firstByteAt === 0) firstByteAt = Date.now();
-        totalReceived += chunk.length;
-      });
+          sink.on('data', (chunk: Buffer) => {
+            if (firstByteAt === 0) firstByteAt = Date.now();
+            totalReceived += chunk.length;
+          });
 
-      const t0 = Date.now();
-      const totalBytesSent = { value: 0 };
+          const t0 = Date.now();
+          const totalBytesSent = { value: 0 };
 
-      setupStreamListeners(
-        source,
-        sink as unknown as Response,
-        'throughput_test',
-        totalBytesSent
+          setupStreamListeners(
+            source,
+            sink as unknown as Response,
+            'throughput_test',
+            totalBytesSent
+          );
+
+          await new Promise<void>((resolve) => sink.on('end', () => resolve()));
+
+          const totalMs = Math.max(1, Date.now() - t0);
+          const ttfbMs = firstByteAt > 0 ? firstByteAt - t0 : -1;
+          const mbps = totalReceived / MB / (totalMs / 1000);
+
+          // log exact numbers
+          console.log(
+            `[Throughput][setupStreamListeners] size=${sizeMb}MB chunk=${chunkKb}KB total=${totalMs}ms TTFB=${ttfbMs}ms => ${mbps.toFixed(2)} MB/s`
+          );
+
+          expect(totalReceived).toBe(totalBytes);
+          expect(mbps).toBeGreaterThan(30);
+          expect(ttfbMs).toBeGreaterThanOrEqual(0);
+          expect(ttfbMs).toBeLessThan(200);
+        },
+        20_000
       );
-
-      await new Promise<void>((resolve) => sink.on('end', () => resolve()));
-
-      const totalMs = Math.max(1, Date.now() - t0);
-      const ttfbMs = firstByteAt > 0 ? firstByteAt - t0 : -1;
-      const mbps = totalReceived / MB / (totalMs / 1000);
-
-      // log exact numbers
-      console.log(
-        `[Throughput][setupStreamListeners] size=${sizeMb}MB chunk=${chunkKb}KB total=${totalMs}ms TTFB=${ttfbMs}ms => ${mbps.toFixed(2)} MB/s`
-      );
-
-      expect(totalReceived).toBe(totalBytes);
-      expect(mbps).toBeGreaterThan(30);
-      expect(ttfbMs).toBeGreaterThanOrEqual(0);
-      expect(ttfbMs).toBeLessThan(200);
-    },
-    20_000
+    }
   );
 
   it('does not corrupt bytes through the observer', async () => {

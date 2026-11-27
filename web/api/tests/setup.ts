@@ -21,63 +21,8 @@ vi.mock('@libsql/client', () => ({
   }),
 }));
 
-import db from '../src/utils/infra/db.util.js';
 import { resetSSE } from '../src/utils/network/sse.util.js';
 import createRedisClient from '../src/utils/infra/redis.util.js';
-
-interface DBClient {
-  execute: (
-    options: string | { sql: string; args?: unknown[] }
-  ) => Promise<unknown>;
-}
-
-async function initTestDb(client: DBClient) {
-  try {
-    await client.execute(`CREATE TABLE IF NOT EXISTS spotify_mappings (
-      url TEXT PRIMARY KEY,
-      title TEXT,
-      artist TEXT,
-      album TEXT,
-      imageUrl TEXT,
-      duration INTEGER,
-      isrc TEXT,
-      previewUrl TEXT,
-      youtubeUrl TEXT,
-      formats TEXT,
-      audioFormats TEXT,
-      audioFeatures TEXT,
-      year TEXT,
-      timestamp INTEGER
-    )`);
-    await client.execute(
-      'CREATE INDEX IF NOT EXISTS idx_spotify_isrc ON spotify_mappings(isrc)'
-    );
-    await client.execute(
-      'CREATE INDEX IF NOT EXISTS idx_spotify_youtube ON spotify_mappings(youtubeUrl)'
-    );
-
-    await client.execute(`CREATE TABLE IF NOT EXISTS configs (
-      key TEXT PRIMARY KEY,
-      value TEXT
-    )`);
-
-    await client.execute(`CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      url TEXT,
-      created_at INTEGER
-    )`);
-
-    await client.execute(`CREATE TABLE IF NOT EXISTS volatile_links (
-      url TEXT PRIMARY KEY,
-      expires_at INTEGER,
-      provider TEXT
-    )`);
-
-    console.log('[TestDB] Local SQLite schema initialized');
-  } catch (error) {
-    console.error('[TestDB] Initialization failed:', (error as Error).message);
-  }
-}
 
 const isE2EMode =
   process.env.VITEST_INCLUDE_E2E === '1' || process.env.E2E === '1';
@@ -552,7 +497,7 @@ export const handlers = [
 
 export const server = setupServer(...handlers);
 
-beforeAll(async () => {
+beforeAll(() => {
   const testPath = expect.getState().testPath;
   const isLiveTest = testPath?.includes('live.test.ts');
   const isE2ETest = testPath?.includes('/e2e/');
@@ -563,9 +508,6 @@ beforeAll(async () => {
 
   if (!isLiveTest) {
     server.listen({ onUnhandledRequest: 'bypass' });
-    if (db) {
-      await initTestDb(db);
-    }
   }
 });
 

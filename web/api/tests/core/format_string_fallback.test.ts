@@ -70,7 +70,9 @@ async function runWithFormat(formatId: string, height: number) {
     } as unknown as Parameters<typeof streamDownload>[3]
   );
 
-  await new Promise((resolve) => setTimeout(resolve, 200));
+  await vi.waitFor(() => {
+    expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+  });
   const args = mockedSpawn.mock.calls[0]?.[1] as string[] | undefined;
   return getFormatString(args || []);
 }
@@ -124,7 +126,9 @@ describe('Resolution-aware format string (Phase 1.5.4)', () => {
       } as unknown as Parameters<typeof streamDownload>[3]
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+    });
     const args = mockedSpawn.mock.calls[0]?.[1] as string[];
     const fStr = getFormatString(args);
     expect(fStr).toBe('999+bestaudio/bv*+ba');

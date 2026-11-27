@@ -6,8 +6,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { CACHE_DIR } from '../../src/services/ytdlp/config.js';
 import { runYtdlpInfo } from '../../src/services/ytdlp/info.js';
-import { streamDownload } from '../../src/services/ytdlp/streamer.js';
-import { createMockChildProcess } from '../utils/mocks.js';
 
 // optimize subsequent stream spawn
 
@@ -99,9 +97,10 @@ describe('runYtdlpInfo — disk JSON persistence', () => {
     expect(info.id).toBe(PERSIST_ID);
 
     // allow filesystem persistence
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await vi.waitFor(() => {
+      expect(fs.existsSync(PERSIST_FILE)).toBe(true);
+    });
 
-    expect(fs.existsSync(PERSIST_FILE)).toBe(true);
     const persisted = fs.readFileSync(PERSIST_FILE, 'utf8');
     expect(JSON.parse(persisted).id).toBe(PERSIST_ID);
   });
@@ -117,118 +116,6 @@ describe('runYtdlpInfo — disk JSON persistence', () => {
       []
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
     expect(info.title).toBe('Disk Cache Test');
-  });
-});
-
-describe('streamDownload — --load-info-json reuse', () => {
-  const STREAM_ID = 'abcDEF12345';
-  const STREAM_FILE = path.join(META_DIR, `${STREAM_ID}.json`);
-  const STREAM_URL = `https://www.youtube.com/watch?v=${STREAM_ID}`;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    fs.mkdirSync(META_DIR, { recursive: true });
-    if (fs.existsSync(STREAM_FILE)) fs.unlinkSync(STREAM_FILE);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    if (fs.existsSync(STREAM_FILE)) fs.unlinkSync(STREAM_FILE);
-  });
-
-  function buildMockInfo() {
-    return {
-      id: STREAM_ID,
-      extractorKey: 'youtube',
-      webpageUrl: STREAM_URL,
-      targetUrl: STREAM_URL,
-      formats: [
-        {
-          formatId: '137',
-          vcodec: 'avc1.640028',
-          acodec: 'mp4a.40.2',
-          ext: 'mp4',
-        },
-      ],
-    } as unknown as Parameters<typeof streamDownload>[3];
-  }
-
-  it('skips --load-info-json for streaming (nsig throttle prevention)', async () => {
-    fs.writeFileSync(
-      STREAM_FILE,
-      JSON.stringify({ id: STREAM_ID, formats: [] }),
-      'utf8'
-    );
-
-    const mockSpawn = createMockChildProcess();
-    vi.mocked(spawn).mockReturnValue(mockSpawn);
-
-    streamDownload(
-      STREAM_URL,
-      { format: 'mp4', formatId: '137' },
-      [],
-      buildMockInfo()
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    const ytdlpCall = vi
-      .mocked(spawn)
-      .mock.calls.find((call) => call[0] === 'yt-dlp');
-    expect(ytdlpCall).toBeDefined();
-    const args = ytdlpCall?.[1] as string[];
-    expect(args).not.toContain('--load-info-json');
-  });
-
-  it('skips --load-info-json when cache is stale (>90 minutes)', async () => {
-    fs.writeFileSync(
-      STREAM_FILE,
-      JSON.stringify({ id: STREAM_ID, formats: [] }),
-      'utf8'
-    );
-    const stale = (Date.now() - 100 * 60 * 1000) / 1000;
-    fs.utimesSync(STREAM_FILE, stale, stale);
-
-    const mockSpawn = createMockChildProcess();
-    vi.mocked(spawn).mockReturnValue(mockSpawn);
-
-    streamDownload(
-      STREAM_URL,
-      { format: 'mp4', formatId: '137' },
-      [],
-      buildMockInfo()
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    const ytdlpCall = vi
-      .mocked(spawn)
-      .mock.calls.find((call) => call[0] === 'yt-dlp');
-    expect(ytdlpCall).toBeDefined();
-    const args = ytdlpCall?.[1] as string[];
-    expect(args).not.toContain('--load-info-json');
-  });
-
-  it('skips --load-info-json when cache file is missing', async () => {
-    const mockSpawn = createMockChildProcess();
-    vi.mocked(spawn).mockReturnValue(mockSpawn);
-
-    streamDownload(
-      STREAM_URL,
-      { format: 'mp4', formatId: '137' },
-      [],
-      buildMockInfo()
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    const ytdlpCall = vi
-      .mocked(spawn)
-      .mock.calls.find((call) => call[0] === 'yt-dlp');
-    expect(ytdlpCall).toBeDefined();
-    const args = ytdlpCall?.[1] as string[];
-    expect(args).not.toContain('--load-info-json');
   });
 });

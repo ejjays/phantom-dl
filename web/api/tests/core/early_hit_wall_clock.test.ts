@@ -51,14 +51,14 @@ describe('[Metadata] Early hit — backend wall-clock metric', () => {
       requestT0,
     });
 
-    // wait for async logs
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const earlyHitLog = logSpy.mock.calls.find(
-      ([msg]) =>
-        typeof msg === 'string' && msg.startsWith('[Metadata] Early hit:')
-    );
-    expect(earlyHitLog).toBeDefined();
+    const earlyHitLog = await vi.waitFor(() => {
+      const found = logSpy.mock.calls.find(
+        ([msg]) =>
+          typeof msg === 'string' && msg.startsWith('[Metadata] Early hit:')
+      );
+      expect(found).toBeDefined();
+      return found;
+    });
     expect(earlyHitLog?.[0]).toMatch(/wall-clock \d+ms/);
   });
 
@@ -69,13 +69,14 @@ describe('[Metadata] Early hit — backend wall-clock metric', () => {
       onProgress,
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const earlyHitLog = logSpy.mock.calls.find(
-      ([msg]) =>
-        typeof msg === 'string' && msg.startsWith('[Metadata] Early hit:')
-    );
-    expect(earlyHitLog).toBeDefined();
+    const earlyHitLog = await vi.waitFor(() => {
+      const found = logSpy.mock.calls.find(
+        ([msg]) =>
+          typeof msg === 'string' && msg.startsWith('[Metadata] Early hit:')
+      );
+      expect(found).toBeDefined();
+      return found;
+    });
     expect(earlyHitLog?.[0]).not.toMatch(/wall-clock/u);
   });
 
@@ -88,13 +89,14 @@ describe('[Metadata] Early hit — backend wall-clock metric', () => {
       requestT0,
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const sseCall = onProgress.mock.calls.find(
-      ([status, , subStatus]) =>
-        status === 'extracting' && subStatus === 'Metadata found'
-    );
-    expect(sseCall).toBeDefined();
+    const sseCall = await vi.waitFor(() => {
+      const found = onProgress.mock.calls.find(
+        ([status, , subStatus]) =>
+          status === 'extracting' && subStatus === 'Metadata found'
+      );
+      expect(found).toBeDefined();
+      return found;
+    });
 
     const detailsJson = sseCall?.[3] as string;
     expect(typeof detailsJson).toBe('string');

@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/ejjays/phantom/actions/workflows/ci.yml"><img src="https://github.com/ejjays/phantom/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://app.deepsource.com/gh/ejjays/phantom/"><img src="https://app.deepsource.com/gh/ejjays/phantom.svg/?label=active+issues&show_trend=true&token=AjSUM1LGBlY2Uzo6_spxrx9Q" alt="DeepSource" /></a>
+  <a href="https://app.deepsource.com/gh/ejjays/phantom-dl/"><img src="https://app.deepsource.com/gh/ejjays/phantom-dl.svg/?label=active+issues&show_trend=true&token=AjSUM1LGBlY2Uzo6_spxrx9Q" alt="DeepSource" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT%2FApache%202.0-green?style=flat" alt="License: MIT/Apache 2.0" /></a>
 </p>
 
@@ -69,7 +69,6 @@ Phantom is hand-built pure-JS extractors that download 4K+ video and audio. It p
 | <img src="web/site/public/logos/pinterest.svg" alt="Pinterest logo" width="26"> | [Pinterest](https://www.pinterest.com) | ✅ | ✅ | ✅ | ✅ | ✅ | video pins + photos |
 | <img src="web/site/public/logos/twitch.svg" alt="Twitch logo" width="24"> | [Twitch](https://www.twitch.tv) | ✅ | ✅ | ✅ | ❌ | ➖ | clips, hls only |
 | <img src="web/site/public/logos/snapchat.svg" alt="Snapchat logo" width="26"> | [Snapchat](https://www.snapchat.com) | ✅ | ✅ | ✅ | ✅ | ➖ | spotlight videos + t.snapchat.com shorts |
-| <img src="web/site/public/logos/watchluna.svg" alt="Watchluna logo" width="26"> | [Watchluna](https://lunagate.org) | ❌ | ✅ | ✅ | ❌ | ➖ | movies & shows, 1080p hls |
 
 ---
 

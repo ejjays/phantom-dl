@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ExtractorError } from '@phantom/extractors';
 import {
   getInfo,
   getStream,
@@ -95,7 +96,7 @@ describe('Threads JS Extractor getInfo', () => {
     expect(hitEmbed).toBe(true);
   });
 
-  it('returns null when both the page and embed are walled', async () => {
+  it('rejects when both the page and embed are walled', async () => {
     global.fetch = vi
       .fn()
       .mockImplementation((reqUrl: string, init?: RequestInit) => {
@@ -103,8 +104,7 @@ describe('Threads JS Extractor getInfo', () => {
         return htmlResponse(walledHtml, reqUrl);
       });
 
-    const info = await getInfo(POST_URL);
-    expect(info).toBeNull();
+    await expect(getInfo(POST_URL)).rejects.toBeInstanceOf(ExtractorError);
   });
 
   it('initiates a pure-JS stream for a resolved format', async () => {

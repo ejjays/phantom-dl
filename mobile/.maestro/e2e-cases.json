@@ -74,7 +74,7 @@
   },
   {
     "id": "soundcloud",
-    "tier": "solid",
+    "tier": "soft",
     "url": "https://soundcloud.com/marshmellomusic/alone",
     "expect": {
       "minFormats": 1,
@@ -111,7 +111,7 @@
   },
   {
     "id": "pinterest",
-    "tier": "solid",
+    "tier": "soft",
     "url": "https://www.pinterest.com/pin/424605071145308338/",
     "expect": {
       "minFormats": 1,

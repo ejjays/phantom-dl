@@ -80,6 +80,93 @@ function findStory(data: NextData, id: string): StoryMeta | null {
   }
   return null;
 }
+interface SchemaVideo {
+  name?: string;
+  description?: string;
+  thumbnailUrl?: string;
+  contentUrl?: string;
+  width?: number;
+  height?: number;
+  duration?: string;
+  embeddedTextCaption?: string;
+  creator?: { name?: string; alternateName?: string; url?: string };
+}
+
+function balancedJson(
+  src: string,
+  start: number,
+  escaped: boolean
+): string | null {
+  let depth = 0;
+  let inString = false;
+  for (let i = start; i < src.length; i++) {
+    const ch = src[i];
+    if (escaped) {
+      if (ch === '\\') i++;
+      else if (ch === '{') depth++;
+      else if (ch === '}' && --depth === 0) return src.slice(start, i + 1);
+      continue;
+    }
+    if (ch === '"') inString = !inString;
+    else if (!inString) {
+      if (ch === '{') depth++;
+      else if (ch === '}' && --depth === 0) return src.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function isoDurationMs(value?: string): number | undefined {
+  const m = value?.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/u);
+  if (!m) return undefined;
+  const secs = Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0);
+  return secs * 1000;
+}
+
+// snapchat dropped __NEXT_DATA__; the video now rides schema.org json inside the next flight string
+function videoFromSchema(html: string): VideoMetadata | null {
+  const markers = [
+    ['\\"@type\\":\\"VideoObject\\"', true],
+    ['"@type":"VideoObject"', false],
+  ] as const;
+  for (const [marker, escaped] of markers) {
+    const at = html.indexOf(marker);
+    if (at === -1) continue;
+    const start = html.lastIndexOf('{', at);
+    if (start === -1) continue;
+    const raw = balancedJson(html, start, escaped);
+    if (!raw) continue;
+    try {
+      const text = escaped ? (JSON.parse(`"${raw}"`) as string) : raw;
+      const obj = JSON.parse(text) as SchemaVideo;
+      if (!obj.contentUrl) continue;
+      return {
+        name: obj.name,
+        description: obj.description,
+        thumbnailUrl: obj.thumbnailUrl,
+        contentUrl: obj.contentUrl,
+        width: obj.width,
+        height: obj.height,
+        durationMs: isoDurationMs(obj.duration),
+        embeddedTextCaption: obj.embeddedTextCaption,
+        creator: obj.creator
+          ? {
+              $case: 'personCreator',
+              personCreator: {
+                username: obj.creator.alternateName,
+                name: obj.creator.name,
+                url: obj.creator.url,
+              },
+            }
+          : undefined,
+      };
+    } catch {
+      // malformed json at this marker, try the next one
+    }
+  }
+  return null;
+}
+
 async function resolveCanonical(
   env: ExtractorEnv,
   url: string
@@ -204,9 +291,8 @@ export function createSnapchatExtractor(env: ExtractorEnv = defaultEnv) {
       if (!res.ok) throw fromStatus(res.status, 'Snapchat', 'spotlight');
       const html = await res.text();
       const data = nextDataFromHtml(html);
-      if (!data) throw noVideo('Snapchat', 'spotlight');
-      const story = findStory(data, id);
-      const meta = story?.videoMetadata;
+      const story = data ? findStory(data, id) : null;
+      const meta = story?.videoMetadata ?? videoFromSchema(html);
       if (!meta?.contentUrl) throw noVideo('Snapchat', 'spotlight');
       const durationMs =
         typeof meta.durationMs === 'string'

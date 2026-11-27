@@ -85,9 +85,10 @@ describe('streamDownload Direct-fetch cookie passthrough', () => {
         } as unknown as Parameters<typeof streamDownload>[3]
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await vi.waitFor(() => {
+        expect(capturedHeaders.length).toBeGreaterThan(0);
+      });
 
-      expect(capturedHeaders.length).toBeGreaterThan(0);
       const headers = capturedHeaders[0];
       expect(headers['Cookie']).toBeDefined();
       expect(headers['Cookie']).toContain('SID=abc123session');
@@ -120,9 +121,10 @@ describe('streamDownload Direct-fetch cookie passthrough', () => {
       } as unknown as Parameters<typeof streamDownload>[3]
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      expect(capturedHeaders.length).toBeGreaterThan(0);
+    });
 
-    expect(capturedHeaders.length).toBeGreaterThan(0);
     const headers = capturedHeaders[0];
     expect(headers['Cookie']).toBeUndefined();
   });
@@ -153,9 +155,10 @@ describe('streamDownload Direct-fetch cookie passthrough', () => {
       } as unknown as Parameters<typeof streamDownload>[3]
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      expect(capturedHeaders.length).toBeGreaterThan(0);
+    });
 
-    expect(capturedHeaders.length).toBeGreaterThan(0);
     const headers = capturedHeaders[0];
     expect(headers['Cookie']).toBeUndefined();
   });
