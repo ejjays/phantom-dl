@@ -43,7 +43,7 @@ for (const { id, url, expectTitle } of E2E_URLS) {
     const input = page.locator('#url-input');
     await expect(input).toBeVisible();
 
-    const convertBtn = page.getByRole('button', { name: /Convert & Download|Processing/ });
+    const convertBtn = page.getByRole('button', { name: /^(Download|Retry|Processing)$/ });
     await expect(convertBtn).toBeVisible();
 
     await input.fill(url);

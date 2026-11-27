@@ -14,8 +14,7 @@ import { handleSseMessage } from './hooks/useSSE';
 import Layout from './components/Layout';
 
 // lazy load pages
-const MainContent = lazy(() => import('./components/MainContent'));
-const UpdatesPage = lazy(() => import('./pages/Updates/UpdatesPage'));
+const HomeScreen = lazy(() => import('./components/home/HomeScreen'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // doc pages (pages/Guide/*, pages/About/*) intentionally unrouted — content is
@@ -193,15 +192,7 @@ const App = () => {
             path="/"
             element={
               <Layout>
-                <MainContent />
-              </Layout>
-            }
-          />
-          <Route
-            path="/updates"
-            element={
-              <Layout>
-                <UpdatesPage />
+                <HomeScreen />
               </Layout>
             }
           />
