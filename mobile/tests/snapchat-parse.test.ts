@@ -123,6 +123,39 @@ describe('snapchat getInfo', () => {
     expect(info?.downloadHeaders?.Referer).toBe('https://www.snapchat.com/');
   });
 
+  it('reads the schema.org VideoObject when __NEXT_DATA__ is gone', async () => {
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'VideoObject',
+      name: 'Gym fit',
+      contentUrl: VIDEO_META.contentUrl,
+      thumbnailUrl: VIDEO_META.thumbnailUrl,
+      width: 540,
+      height: 960,
+      duration: 'PT5S',
+      creator: {
+        name: 'Shrey',
+        alternateName: 'shreypatel57',
+        url: 'https://www.snapchat.com/@shreypatel57',
+      },
+    };
+    const escaped = JSON.stringify(schema).replace(/"/gu, '\\"');
+    mockFetch.mockResolvedValueOnce(
+      htmlRes(
+        `<!doctype html><html><body><script>self.__next_f.push([1,"${escaped}"])</script></body></html>`
+      )
+    );
+
+    const info = await getInfo(
+      `https://www.snapchat.com/spotlight/${TARGET_ID}`
+    );
+    expect(info?.title).toBe('Gym fit');
+    expect(info?.uploader).toBe('Shrey');
+    expect(info?.duration).toBe(5);
+    expect(info?.formats[0]?.quality).toBe('960p');
+    expect(info?.formats[0]?.url).toContain('sc-cdn.net');
+  });
+
   it('derives the uploader from og:url when creator is null (platform-posted clip)', async () => {
     const meta = { ...VIDEO_META, creator: null, width: 0, height: 0 };
     mockFetch.mockResolvedValueOnce(
