@@ -157,12 +157,12 @@ body {
 }
 
 .ghost-float {
-  animation: ghost-float 1600ms ease-in-out infinite;
+  animation: ghost-float 4000ms ease-in-out infinite;
 }
 
 .ghost-shadow {
   transform-origin: 200px 385px;
-  animation: ghost-shadow-pulse 1600ms ease-in-out infinite;
+  animation: ghost-shadow-pulse 4000ms ease-in-out infinite;
 }
 
 .ghost-eyes {
