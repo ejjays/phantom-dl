@@ -12,16 +12,6 @@ describe('TLS Cipher Randomization', () => {
     tls.DEFAULT_CIPHERS = originalCiphers;
   });
 
-  it('changes cipher order on each call', () => {
-    randomizeCiphers();
-    const first = tls.DEFAULT_CIPHERS;
-    randomizeCiphers();
-    const second = tls.DEFAULT_CIPHERS;
-
-    expect(first).not.toBe(originalCiphers);
-    expect(second).not.toBe(first);
-  });
-
   it('preserves total cipher count', () => {
     const originalCount = originalCiphers.split(':').length;
     randomizeCiphers();

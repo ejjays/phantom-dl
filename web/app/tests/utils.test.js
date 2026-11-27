@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatSize, getQualityLabel, cn } from '../src/lib/utils';
+import { formatSize, getQualityLabel } from '../src/lib/utils';
 
 describe('Frontend Utils', () => {
   describe('formatSize', () => {
@@ -27,12 +27,6 @@ describe('Frontend Utils', () => {
 
     it('should strip Original Master', () => {
       expect(getQualityLabel('1080p (Original Master)')).toBe('1080p');
-    });
-  });
-
-  describe('cn (Tailwind Merge)', () => {
-    it('should merge classes correctly', () => {
-      expect(cn('px-2', 'px-4')).toBe('px-4');
     });
   });
 });

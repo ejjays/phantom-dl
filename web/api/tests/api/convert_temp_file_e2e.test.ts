@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createMockChildProcess } from '../utils/mocks.js';
 
 // e2e: mock yt-dlp writes temp file
 
@@ -37,14 +38,13 @@ vi.mock('node:child_process', async () => {
           // ignore
         }
       }
-      // run quick `true` to exit cleanly
-      return (
-        actual.spawn as unknown as (
-          c: string,
-          a: readonly string[],
-          o: unknown
-        ) => unknown
-      )('true', [], opts);
+      const proc = createMockChildProcess({ exitCode: 0 });
+      setImmediate(() => {
+        proc.stdout?.push(null);
+        proc.stderr?.push(null);
+        proc.emit('close', 0);
+      });
+      return proc;
     },
   };
 });

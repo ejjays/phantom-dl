@@ -176,12 +176,13 @@ describe('cache pollution: full chain integration', () => {
     const formatId = String(target?.formatId);
     streamDownload(url, { format: 'mp4', formatId }, [], info);
 
-    await new Promise((resolve) => setTimeout(resolve, 250));
-
-    const ytdlpCall = vi
-      .mocked(spawn)
-      .mock.calls.find((call) => call[0] === 'yt-dlp');
-    expect(ytdlpCall).toBeDefined();
+    const ytdlpCall = await vi.waitFor(() => {
+      const call = vi
+        .mocked(spawn)
+        .mock.calls.find((candidate) => candidate[0] === 'yt-dlp');
+      expect(call).toBeDefined();
+      return call;
+    });
 
     const args = ytdlpCall?.[1] as string[];
     const allArgs = args.join(' ');
@@ -215,11 +216,13 @@ describe('cache pollution: full chain integration', () => {
         [],
         info
       );
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      const call = vi
-        .mocked(spawn)
-        .mock.calls.find((entry) => entry[0] === 'yt-dlp');
+      const call = await vi.waitFor(() => {
+        const found = vi
+          .mocked(spawn)
+          .mock.calls.find((entry) => entry[0] === 'yt-dlp');
+        expect(found).toBeDefined();
+        return found;
+      });
       const args = (call?.[1] as string[]) || [];
       const joined = args.join(' ');
       expect(

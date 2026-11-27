@@ -4,6 +4,7 @@ import {
   getStream as ytGetStream,
 } from './youtube/index.js';
 import { logger } from '../../utils/infra/logger.util.js';
+import * as Sentry from '@sentry/node'; // skipcq: JS-C1003
 import {
   getInfo as igGetInfo,
   getStream as igGetStream,
@@ -26,10 +27,7 @@ import { getInfo as biGetInfo, getStream as biGetStream } from './bilibili.js';
 import { x } from './x.js';
 import { vimeo } from './vimeo.js';
 import { bluesky } from './bluesky.js';
-import {
-  getInfo as genGetInfo,
-  getStream as genGetStream,
-} from './generic.js';
+import { getInfo as genGetInfo, getStream as genGetStream } from './generic.js';
 import { Extractor, ExtractorOptions, VideoInfo } from '../../types/index.js';
 import {
   fetchMetadata,
@@ -39,6 +37,7 @@ import { recordFailure } from '../../utils/infra/metrics.util.js';
 import {
   getExtractor as pkgGetExtractor,
   getRouteName,
+  ExtractorError,
 } from '@phantom/extractors';
 import { sharedBackendEnv } from './sharedEnv.js';
 import { Readable } from 'node:stream';
@@ -53,15 +52,24 @@ const threads: Extractor = { getInfo: thGetInfo, getStream: thGetStream };
 const bilibili: Extractor = { getInfo: biGetInfo, getStream: biGetStream };
 
 function wrapPkg(pkg: {
-  getInfo: (url: string, options?: ExtractorOptions) => Promise<VideoInfo | null>;
-  getStream: (videoInfo: VideoInfo, options?: ExtractorOptions) => Promise<ReadableStream>;
+  getInfo: (
+    url: string,
+    options?: ExtractorOptions
+  ) => Promise<VideoInfo | null>;
+  getStream: (
+    videoInfo: VideoInfo,
+    options?: ExtractorOptions
+  ) => Promise<ReadableStream>;
 }): Extractor {
   return {
     getInfo: pkg.getInfo,
     getStream: (videoInfo, options) =>
       Promise.resolve(
         Readable.fromWeb(
-          pkg.getStream(videoInfo, options) as unknown as import('node:stream/web').ReadableStream
+          pkg.getStream(
+            videoInfo,
+            options
+          ) as unknown as import('node:stream/web').ReadableStream
         )
       ),
   };
@@ -219,21 +227,30 @@ export async function getInfo(
     try {
       const res = await extractor.getInfo(url, options);
       return res;
-    } catch {
-      recordFailure(`extract:${extractorNames.get(extractor) ?? 'generic'}`);
+    } catch (error: unknown) {
+      const label = extractorNames.get(extractor) ?? 'generic';
+      recordFailure(`extract:${label}`);
+      if (error instanceof ExtractorError) {
+        if (error.retryable) recordFailure(`extract:${label}:retryable`);
+        if (error.expected) recordFailure(`extract:${label}:expected`);
+        if (error.emptyParse) recordFailure(`extract:${label}:empty-parse`);
+      }
+      Sentry.captureException(error);
       return null;
     }
   })();
 
   inFlightJsTasks.set(url, jsTask);
-  jsTask.finally(() => {
-    const cleanupTimer = setTimeout(() => {
-      if (inFlightJsTasks.get(url) === jsTask) {
-        inFlightJsTasks.delete(url);
-      }
-    }, 30000);
-    cleanupTimer.unref?.();
-  });
+  void jsTask
+    .catch(() => {})
+    .finally(() => {
+      const cleanupTimer = setTimeout(() => {
+        if (inFlightJsTasks.get(url) === jsTask) {
+          inFlightJsTasks.delete(url);
+        }
+      }, 30000);
+      cleanupTimer.unref?.();
+    });
 
   const fastResult = await Promise.race([
     jsTask.then((res) => ({

@@ -9,7 +9,10 @@ import { ytProxyArgs, ytProxyDispatcher, shouldProxyUrl } from './yt-proxy.js';
 import { fetch as undiciFetch } from 'undici';
 import { sendEvent } from '../../utils/network/sse.util.js';
 import { VideoInfo, SSEEvent } from '../../types/index.js';
-import { secureFetch } from '../../utils/network/security.util.js';
+import {
+  secureFetch,
+  resolveWithin,
+} from '../../utils/network/security.util.js';
 import {
   processVideoFormats,
   processAudioFormats,
@@ -118,10 +121,7 @@ export async function getCachedInfo(
         return data;
       }
     } catch (error) {
-      logger.warn(
-        '[Info] Redis cache fetch failed:',
-        (error as Error).message
-      );
+      logger.warn('[Info] Redis cache fetch failed:', (error as Error).message);
     }
   }
   return null;
@@ -161,7 +161,8 @@ async function persistInfoJsonToDisk(
   try {
     const dir = path.join(CACHE_DIR, 'metadata');
     await fs.promises.mkdir(dir, { recursive: true });
-    const filePath = path.join(dir, `${info.id}.json`);
+    const filePath = resolveWithin(dir, `${info.id}.json`);
+    if (!filePath) return;
     await fs.promises.writeFile(filePath, rawJson, 'utf8');
   } catch (error) {
     // non-critical optimization fallback
@@ -175,8 +176,7 @@ async function persistInfoJsonToDisk(
 export function ensureNormalizedFormats(info: VideoInfo): void {
   if (!info || !Array.isArray(info.formats)) return;
   const first = info.formats[0] as unknown as
-    | { format_id?: unknown; formatId?: unknown }
-    | undefined;
+    { format_id?: unknown; formatId?: unknown } | undefined;
   const looksRaw =
     Boolean(first) &&
     first?.formatId === undefined &&
@@ -245,10 +245,7 @@ export async function expandShortUrl(url: string): Promise<string> {
     try {
       expanded = await _expandFetch(url, 'GET');
     } catch (getError) {
-      logger.debug(
-        '[Info] GET expansion failed:',
-        (getError as Error).message
-      );
+      logger.debug('[Info] GET expansion failed:', (getError as Error).message);
       return url;
     }
   }

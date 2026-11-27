@@ -17,14 +17,10 @@ export async function getInfo(
   url: string,
   options: ExtractorOptions = {}
 ): Promise<VideoInfo | null> {
-  try {
-    return (await tkExtractor.getInfo(
-      url,
-      options as unknown as Parameters<typeof tkExtractor.getInfo>[1]
-    )) as VideoInfo | null;
-  } catch {
-    return null;
-  }
+  return (await tkExtractor.getInfo(
+    url,
+    options as unknown as Parameters<typeof tkExtractor.getInfo>[1]
+  )) as VideoInfo | null;
 }
 
 export async function getStream(

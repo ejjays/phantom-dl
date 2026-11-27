@@ -1,4 +1,5 @@
-#!/usr/bin/env node // skipcq: JS-0271
+#!/usr/bin/env node
+// skipcq: JS-0271
 import { spawn } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
 import { Readable, Writable } from 'node:stream';
@@ -28,12 +29,17 @@ function ffmpegRemux(url: string, headers: Record<string, string>) {
   }
   const proc = spawn('ffmpeg', [
     '-hide_banner',
-    '-loglevel', 'error',
+    '-loglevel',
+    'error',
     ...headerFlags,
-    '-i', url,
-    '-c', 'copy',
-    '-movflags', 'frag_keyframe+empty_moov',
-    '-f', 'mp4',
+    '-i',
+    url,
+    '-c',
+    'copy',
+    '-movflags',
+    'frag_keyframe+empty_moov',
+    '-f',
+    'mp4',
     'pipe:1',
   ]);
   let cancelled = false;

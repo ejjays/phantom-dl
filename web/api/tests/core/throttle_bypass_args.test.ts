@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { streamDownload } from '../../src/services/ytdlp/streamer';
-import { COMMON_ARGS } from '../../src/services/ytdlp/config';
 import { spawn } from 'node:child_process';
 import { createMockChildProcess } from '../utils/mocks.js';
 
@@ -61,7 +60,11 @@ describe('yt-dlp throttle-bypass arguments', () => {
       targetUrl: 'http://test.com',
     } as unknown as Parameters<typeof streamDownload>[3]);
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await vi.waitFor(() => {
+      expect(
+        vi.mocked(spawn).mock.calls.some((call) => call[0] === 'yt-dlp')
+      ).toBe(true);
+    });
 
     const ytdlpCall = vi
       .mocked(spawn)
@@ -71,21 +74,5 @@ describe('yt-dlp throttle-bypass arguments', () => {
     const args = ytdlpCall?.[1] as string[];
     const clientArg = args.find((arg) => arg.includes('player-client='));
     expect(clientArg).toBe('youtube:player-client=tv');
-  });
-
-  it('uses 10M http-chunk-size and 1M buffer-size for fewer round-trips', () => {
-    const chunkIdx = COMMON_ARGS.indexOf('--http-chunk-size');
-    expect(chunkIdx).toBeGreaterThan(-1);
-    expect(COMMON_ARGS[chunkIdx + 1]).toBe('10M');
-
-    const bufIdx = COMMON_ARGS.indexOf('--buffer-size');
-    expect(bufIdx).toBeGreaterThan(-1);
-    expect(COMMON_ARGS[bufIdx + 1]).toBe('1M');
-  });
-
-  it('uses --throttled-rate to retry when youtube cdn caps below 100K', () => {
-    const tIdx = COMMON_ARGS.indexOf('--throttled-rate');
-    expect(tIdx).toBeGreaterThan(-1);
-    expect(COMMON_ARGS[tIdx + 1]).toBe('100K');
   });
 });

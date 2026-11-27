@@ -69,7 +69,11 @@ describe('streamDownload FFmpeg arguments', () => {
     );
 
     // wait IIFE
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await vi.waitFor(() => {
+      expect(
+        vi.mocked(spawn).mock.calls.some((call) => call[0] === 'yt-dlp')
+      ).toBe(true);
+    });
 
     expect(spawn).toHaveBeenCalledWith(
       'yt-dlp',
@@ -121,7 +125,11 @@ describe('streamDownload FFmpeg arguments', () => {
       mockInfo
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await vi.waitFor(() => {
+      expect(
+        vi.mocked(spawn).mock.calls.some((call) => call[0] === 'yt-dlp')
+      ).toBe(true);
+    });
 
     const calls = vi.mocked(spawn).mock.calls;
     const ytdlpCall = calls.find((call) => call[0] === 'yt-dlp');

@@ -10,5 +10,7 @@ export default defineConfig({
     reporters: ['default', 'junit'],
     outputFile: './test-results.xml',
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
+    pool: 'forks',
+    maxWorkers: 2,
   },
 });

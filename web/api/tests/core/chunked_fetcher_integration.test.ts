@@ -93,7 +93,9 @@ describe('streamer.tryChunkedFetch integration', () => {
       formatId: '140',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      getCaptured();
+    });
 
     const opts = getCaptured();
     const initial = await opts.urlProvider();
@@ -111,7 +113,9 @@ describe('streamer.tryChunkedFetch integration', () => {
       formatId: '140',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      getCaptured();
+    });
     const opts = getCaptured();
 
     const before = await opts.urlProvider();
@@ -138,7 +142,9 @@ describe('streamer.tryChunkedFetch integration', () => {
       formatId: '140',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      getCaptured();
+    });
     const opts = getCaptured();
 
     await expect(opts.transplant?.()).rejects.toThrow(
@@ -180,7 +186,9 @@ describe('streamer.tryChunkedFetch integration', () => {
       formatId: '140',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      getCaptured();
+    });
     const opts = getCaptured();
 
     await opts.transplant?.();
@@ -214,8 +222,8 @@ describe('streamer.tryChunkedFetch integration', () => {
       formatId: '140',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    expect(getCaptured().service).toBe('youtube');
+    await vi.waitFor(() => {
+      expect(getCaptured().service).toBe('youtube');
+    });
   });
 });

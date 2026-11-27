@@ -33,14 +33,15 @@ describe('setupStreamListeners — subStatus label', () => {
     sourceStream.write(Buffer.from('hello-world-payload'));
     sourceStream.end();
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const transmitting = sendEventSpy.mock.calls.find(
-      ([, event]) =>
-        typeof (event as { subStatus?: string })?.subStatus === 'string' &&
-        (event as { subStatus: string }).subStatus.startsWith('TRANSMITTING:')
-    );
-    expect(transmitting).toBeDefined();
+    const transmitting = await vi.waitFor(() => {
+      const found = sendEventSpy.mock.calls.find(
+        ([, event]) =>
+          typeof (event as { subStatus?: string })?.subStatus === 'string' &&
+          (event as { subStatus: string }).subStatus.startsWith('TRANSMITTING:')
+      );
+      expect(found).toBeDefined();
+      return found;
+    });
     const subStatus = (transmitting?.[1] as { subStatus: string }).subStatus;
     expect(subStatus).toContain('Turbo');
     expect(subStatus).not.toContain('EME');

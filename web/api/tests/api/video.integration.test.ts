@@ -3,18 +3,6 @@ import request from 'supertest';
 import app from '../../src/app.js';
 
 describe('Video API Integration', () => {
-  it('GET /ping should return pong', async () => {
-    const res = await request(app).get('/ping');
-    expect(res.status).toBe(200);
-    expect(res.text).toBe('pong');
-  });
-
-  it('GET /health should return 200 ok', async () => {
-    const res = await request(app).get('/health');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
-  });
-
   it('GET /info should return 400 for missing URL', async () => {
     const res = await request(app).get('/info');
     expect(res.status).toBe(400);

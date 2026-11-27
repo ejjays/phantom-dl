@@ -82,7 +82,11 @@ describe('Stream lifecycle across retries', () => {
     const chunks: Buffer[] = [];
     stream.on('data', (chunk: Buffer) => chunks.push(chunk));
 
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    const total = await vi.waitFor(() => {
+      const received = Buffer.concat(chunks).toString();
+      expect(received).toContain('video bytes here');
+      return received;
+    });
 
     const calls = mockedSpawn.mock.calls;
     expect(calls.length).toBeGreaterThanOrEqual(2);
@@ -91,9 +95,6 @@ describe('Stream lifecycle across retries', () => {
     const secondArgs = calls[1][1] as string[];
     const clientArg = secondArgs.find((arg) => arg.includes('player-client='));
     expect(clientArg).toBe('youtube:player-client=android_vr');
-
-    // second attempt data reached output
-    const total = Buffer.concat(chunks).toString();
     expect(total).toContain('video bytes here');
   });
 
@@ -114,12 +115,14 @@ describe('Stream lifecycle across retries', () => {
       stream.on('close', () => resolve());
     });
 
-    await Promise.race([
-      ended,
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-    ]);
+    await vi.waitFor(() => {
+      expect(spawnCount).toBeGreaterThanOrEqual(4);
+    });
 
-    // all 4 clients should have been tried
-    expect(spawnCount).toBeGreaterThanOrEqual(4);
+    const closed = await Promise.race([
+      ended.then(() => true),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1000)),
+    ]);
+    expect(closed).toBe(true);
   });
 });

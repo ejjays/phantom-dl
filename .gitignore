@@ -52,6 +52,8 @@ web/app/public/libav/
 web/api/test-results.xml
 mobile/test-results.xml
 packages/extractors/test-results.xml
+web/backend/test-results.xml
+web/frontend/test-results.xml
 scripts/eslint-plugin-nexstream.js
 scripts/setup/restore.sh
 scripts/setup

@@ -92,7 +92,9 @@ describe('Temp file flow (Phase 1.5.7)', () => {
       formatId: '137',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+    });
 
     const args = mockedSpawn.mock.calls[0]?.[1] as string[] | undefined;
     expect(args).toBeDefined();
@@ -116,7 +118,9 @@ describe('Temp file flow (Phase 1.5.7)', () => {
     );
 
     // wait for spawn to be called
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await vi.waitFor(() => {
+      expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+    });
 
     const args = mockedSpawn.mock.calls[0][1] as string[];
     const tempPath = args[args.lastIndexOf('-o') + 1];
@@ -148,7 +152,9 @@ describe('Temp file flow (Phase 1.5.7)', () => {
       { format: 'mp4', formatId: '137' }
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await vi.waitFor(() => {
+      expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+    });
 
     const args = mockedSpawn.mock.calls[0][1] as string[];
     const tempPath = args[args.lastIndexOf('-o') + 1];
@@ -165,10 +171,9 @@ describe('Temp file flow (Phase 1.5.7)', () => {
       setTimeout(resolve, 1000);
     });
 
-    // give cleanup a moment
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    expect(fs.existsSync(tempPath)).toBe(false);
+    await vi.waitFor(() => {
+      expect(fs.existsSync(tempPath)).toBe(false);
+    });
   });
 
   it('triggers retry rotation when yt-dlp fails before writing temp file', async () => {
@@ -182,7 +187,9 @@ describe('Temp file flow (Phase 1.5.7)', () => {
       formatId: '137',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await vi.waitFor(() => {
+      expect(mockedSpawn.mock.calls.length).toBeGreaterThan(0);
+    });
 
     // first attempt fails with format error
     (failProc.stderr as PassThrough).write(
@@ -190,7 +197,9 @@ describe('Temp file flow (Phase 1.5.7)', () => {
     );
     failProc.emit('close', 1);
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      expect(mockedSpawn.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
 
     // second spawn used different client
     expect(mockedSpawn.mock.calls.length).toBeGreaterThanOrEqual(2);

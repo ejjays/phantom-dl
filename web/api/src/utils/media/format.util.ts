@@ -173,7 +173,6 @@ function resolveVideoAudioFlags(format: RawFormat, acodec: string) {
     format.is_video === false ||
     format.is_audio ||
     format.hasAudio ||
-    format.has_video ||
     (acodec !== 'none' && acodec !== '')
   );
   return { isVideo: Boolean(isVideo), isAudio };
@@ -192,7 +191,9 @@ function mapRawToFormat(format: RawFormat, duration: number): Format | null {
   const extension = isVideo && !isAudio ? 'mp4' : rawExtension;
 
   return {
-    formatId: String(format.formatId || format.format_id || format.itag),
+    formatId: String(
+      format.formatId ?? format.format_id ?? format.itag ?? 'unknown'
+    ),
     extension,
     url: format.url,
     resolution,

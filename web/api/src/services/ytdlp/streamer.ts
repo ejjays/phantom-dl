@@ -1,4 +1,5 @@
 import { isHost } from '../../utils/network/host.util.js';
+import { resolveWithin } from '../../utils/network/security.util.js';
 import { spawn, ChildProcess } from 'node:child_process';
 import { logger } from '../../utils/infra/logger.util.js';
 import * as Sentry from '@sentry/node'; // skipcq: JS-C1003
@@ -496,6 +497,11 @@ async function deliverYoutubeMerge(
   return false;
 }
 
+function metadataCachePath(youtubeId: string | undefined): string {
+  const name = `${String(youtubeId || Date.now())}.json`;
+  return resolveWithin(path.join(CACHE_DIR, 'metadata'), name) ?? '';
+}
+
 export function streamDownload(
   url: string,
   options: StreamOptions,
@@ -603,11 +609,7 @@ export function streamDownload(
         (info.targetUrl || info.webpageUrl || '').match(
           /(?:v=|\/v\/)([0-9A-Za-z_-]{11})/
         )?.[1] || info.id;
-      const cachedJsonPath = path.join(
-        CACHE_DIR,
-        'metadata',
-        `${youtubeId}.json`
-      );
+      const cachedJsonPath = metadataCachePath(youtubeId);
       // stale nsig = throttled; skip cache
       const useCache = false;
       const fsSync = await import('node:fs');
@@ -620,7 +622,10 @@ export function streamDownload(
         } catch {
           // ignore mkdir failure
         }
-        const idPart = String(youtubeId || Date.now()).replace(/[^a-zA-Z0-9_-]/gu, '_');
+        const idPart = String(youtubeId || Date.now()).replace(
+          /[^a-zA-Z0-9_-]/gu,
+          '_'
+        );
         tempPath = path.join(
           tmpDir,
           `${idPart}_${Math.random().toString(36).slice(2, 8)}.${options.format === 'webm' ? 'webm' : 'mp4'}`
